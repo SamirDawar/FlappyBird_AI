@@ -42,5 +42,53 @@ class Bird:
         Displacement = self.velocity * self.tick_count + 1.5*self.tick_count**2
 
         if Displacement >= 16:
-            Displacement = Displacement/abs(Displacement) * 16
+            Displacement = 16
             
+        #JUMP
+        if Displacement < 0:
+            Displacement -= 2
+
+        self.y = self.y + Displacement
+
+        #BIRD TILT
+        if Displacement < 0 or self.y < self.height + 50:
+            if self.tilt < self.MAX_ROTATION:
+                self.tilt = self.ROTATION_VELOCITY
+        else: 
+            if self.tilt > -90:
+                self.tilt -= self.ROTATION_VELOCITY
+
+    
+    def draw(self, window):
+        self.img_count += 1
+
+         # For animation of bird, loop through three images
+        if self.img_count <= self.ANIMATION_TIME:
+            self.img = self.IMGS[0]
+        elif self.img_count <= self.ANIMATION_TIME*2:
+            self.img = self.IMGS[1]
+        elif self.img_count <= self.ANIMATION_TIME*3:
+            self.img = self.IMGS[2]
+        elif self.img_count <= self.ANIMATION_TIME*4:
+            self.img = self.IMGS[1]
+        elif self.img_count == self.ANIMATION_TIME*4 + 1:
+            self.img = self.IMGS[0]
+            self.img_count = 0
+
+        if self.tilt <= -80:
+            self.img = self.IMGS[1]
+            self.img_count = self.ANIMATION_TIME*2
+        
+        rotated_image = pg.transform.rotate(self.img, self.tilt)
+        new_rect = rotated_image.get_rect(center=self.img.get_rect(topleft = (self.x, self.y).center))
+    
+    def get_mask(self):
+        return pg.mask.from_surface(self.img)
+    
+
+    #WINDOW
+    def draw_window(window, bird):
+        window.blit(BACKGROUND_IMG)
+    
+
+    def main():
