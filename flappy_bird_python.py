@@ -18,3 +18,29 @@ class Bird:
     MAX_ROTATION = 25
     ROTATION_VELOCITY = 20
     ANIMATION_TIME = 5
+
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.tilt = 0
+        self.tick_count = 0
+        self.velocity = 0
+        self.height = self.y
+        self.img_count = 0
+        self.img = self.IMGS[0]
+
+
+    def Jump(self):
+        self.velocity = -10.5
+        self.tick_count = 0
+        self.height = self.y + self.y
+
+
+    def move(self):
+        self.tick_count += 1
+
+        Displacement = self.velocity * self.tick_count + 1.5*self.tick_count**2
+
+        if Displacement >= 16:
+            Displacement = Displacement/abs(Displacement) * 16
+            
