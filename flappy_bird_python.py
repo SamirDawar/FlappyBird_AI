@@ -4,7 +4,7 @@ import os
 import random
 import neat
 
-WIN_WIDTH = 600
+WIN_WIDTH = 500
 WIN_HEIGHT = 800
 
 
@@ -80,15 +80,39 @@ class Bird:
             self.img_count = self.ANIMATION_TIME*2
         
         rotated_image = pg.transform.rotate(self.img, self.tilt)
-        new_rect = rotated_image.get_rect(center=self.img.get_rect(topleft = (self.x, self.y).center))
+        new_rect = rotated_image.get_rect(center=self.img.get_rect(topleft=(self.x, self.y)).center)
+        window.blit(rotated_image, new_rect.topleft)
     
     def get_mask(self):
         return pg.mask.from_surface(self.img)
     
 
     #WINDOW
-    def draw_window(window, bird):
-        window.blit(BACKGROUND_IMG)
+def draw_window(window, bird):
+    window.blit(BACKGROUND_IMG, (0, 0))
+    bird.draw(window)
+    pg.display.update()
+
     
 
-    def main():
+def main():
+    bird = Bird(200, 200)
+    window = pg.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
+    clock = pg.time.Clock()
+
+
+    run = True
+    while run:
+        clock.tick(30)
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                run = False
+
+
+        bird.move()
+        draw_window(window, bird)
+
+    pg.quit()
+    quit()
+
+main()
