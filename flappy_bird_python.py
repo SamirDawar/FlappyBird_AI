@@ -3,6 +3,9 @@ import time
 import os
 import random
 import neat
+import keyboard
+pg.font.init()
+
 
 WIN_WIDTH = 500
 WIN_HEIGHT = 800
@@ -12,6 +15,8 @@ BIRD_IMAGES = [pg.transform.scale2x(pg.image.load(os.path.join("imgs", "bird1.pn
 BACKGROUND_IMG = pg.transform.scale2x(pg.image.load(os.path.join("imgs", "bg.png")))
 PIPE_IMG = pg.transform.scale2x(pg.image.load(os.path.join("imgs", "pipe.png")))
 GROUND_IMG = pg.transform.scale2x(pg.image.load(os.path.join("imgs", "base.png")))
+
+STAT_FONT = pg.font.SysFont("comicsans", 50)
 
 class Bird:
     IMGS = BIRD_IMAGES
@@ -121,23 +126,80 @@ class Pipe:
 
 
     #Function that uses pygames mask to check for collisions
-    #TODO: FINISH THIS
-    def collide():
-        return
+    def collide(self, bird):
+        bird_mask = bird.get_mask()
+        bottom_mask = pg.mask.from_surface(self.PIPE_BOTTOM)
+        top_mask = pg.mask.from_surface(self.PIPE_TOP)
+
+        #Find the bird to pipe offset
+        top_offset = (self.x - bird.x, self.top - round(bird.y))
+        bottom_offset = (self.x - bird.x, self.bottom - round(bird.y))
+        #Check for bird and pipe collision using masks
+        b_point = bird_mask.overlap(bottom_mask, bottom_offset)
+        t_point = bird_mask.overlap(top_mask, top_offset)
+
+        if b_point or t_point:
+            return True
+        
+        return False
+
+
+class Base:
+    VEL = 5
+    WIDTH = GROUND_IMG.get_width()
+    IMG = GROUND_IMG
+
+    def __init__(self, y):
+        self.y = y
+        self.x1 = 0
+        self.x2 = self.WIDTH
+
+    #Move the ground
+    def move(self):
+        self.x1 -= self.VEL
+        self.x2 -= self.VEL
+
+        if self.x1 + self.WIDTH < 0:
+            self.x1 = self.x2 + self.WIDTH
+
+        if self.x2 + self.WIDTH < 0:
+            self.x2 = self.x1 + self.WIDTH
+
+
+    #Draw the ground
+    def draw(self, win):
+        win.blit(self.IMG, (self.x1, self.y))
+        win.blit(self.IMG, (self.x2, self.y))
+
 
 
     #WINDOW
-def draw_window(window, bird):
+def draw_window(window, bird, pipes, base, score):
     window.blit(BACKGROUND_IMG, (0, 0))
+    #Draw the pipes
+    for pipe in pipes:
+        pipe.draw(window)
+    
+    text = STAT_FONT.render("Score: " + str(score), 1, (255, 255, 255))
+    window.blit(text, (WIN_WIDTH - 10 - text.get_width(), 10))
+
+    base.draw(window)
+
+        
+
     bird.draw(window)
     pg.display.update()
 
     
 
 def main():
-    bird = Bird(200, 200)
+    bird = Bird(230, 350)
+    base = Base(730)
+    pipes = [Pipe(600)]
     window = pg.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
     clock = pg.time.Clock()
+
+    score = 0
 
 
     run = True
@@ -148,8 +210,38 @@ def main():
                 run = False
 
 
-        bird.move()
-        draw_window(window, bird)
+        #bird.move()
+
+        
+        add_pipe = False
+        rem = []
+        for pipe in pipes:
+            if pipe.collide(bird):
+                pass
+            #check if the pipe is completely off the screen
+            if pipe.x + pipe.PIPE_TOP.get_width() < 0:
+                rem.append(pipe)
+
+            if not pipe.passed and pipe.x < bird.x:
+                pipe.passed = True
+                add_pipe = True
+
+            pipe.move()
+
+        if add_pipe:
+            score += 1
+            pipes.append(Pipe(600))
+        
+        for p in rem:
+            pipes.remove(p)
+
+
+        #Check if Bird has hit the ground
+        if bird.y + bird.img.get_height() >= 730:
+            pass
+
+        base.move()
+        draw_window(window, bird, pipes, base, score)
 
     pg.quit()
     quit()
