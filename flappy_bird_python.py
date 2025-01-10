@@ -1,3 +1,4 @@
+import neat.config
 import neat.nn.feed_forward
 import neat.population
 import neat.statistics
@@ -177,8 +178,9 @@ class Base:
 
 
     #WINDOW
-def draw_window(window, bird, pipes, base, score):
+def draw_window(window, birds, pipes, base, score):
     window.blit(BACKGROUND_IMG, (0, 0))
+
     #Draw the pipes
     for pipe in pipes:
         pipe.draw(window)
@@ -188,9 +190,9 @@ def draw_window(window, bird, pipes, base, score):
 
     base.draw(window)
 
-        
+    for bird in birds:
+        bird.draw(window)
 
-    bird.draw(window)
     pg.display.update()
 
     
@@ -200,8 +202,8 @@ def main(genomes, config):
     ge = []
     birds = []
 
-    for g in genomes:
-        net = neat.nn.FeedForwardNetwork(g, config)
+    for _, g in genomes:
+        net = neat.nn.FeedForwardNetwork.create(g, config)
         nets.append(net)
         birds.append(Bird(230, 350))
         g.fitness = 0
@@ -223,31 +225,40 @@ def main(genomes, config):
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 run = False
+                pg.quit()
+                quit()
 
 
         pipe_ind = 0
-        if len(birds) > 0:
+        if len(birds) > 0 and len(pipes) > 0:
             if len(pipes) > 1 and birds[0].x > pipes[0].x + pipes[0].PIPE_TOP.get_width():
                 pipe_ind = 1
+        else:
+            run = False
+            break
+
 
         
-        for x, birds in enumerate(bird):
+        for x, bird in enumerate(birds):  # Fixed: 'bird' instead of 'birds'
             bird.move()
             ge[x].fitness += 0.1
 
-            #TODO: FINISH THIS
-            output = nets[x].activate((bird.y, abs))
+            output = nets[x].activate((bird.y, abs(bird.y - pipes[pipe_ind].height), abs(bird.y - pipes[pipe_ind].bottom)))
+
+            if output[0] > 0.5:
+                bird.Jump()
+
 
         
         add_pipe = False
         rem = []
         for pipe in pipes:
-            for x, bird in enumerate(birds):
-                if pipe.collide(bird):
-                    ge[x].fitness -= 1
-                    birds.pop(x)
-                    nets.pop(x)
-                    ge.pop(x)
+            if bird.y + bird.img.get_height() >= 730 or bird.y < 0:
+                for x, bird in enumerate(birds):
+                        birds.pop(x)
+                        nets.pop(x)
+                        ge.pop(x)
+
 
 
                     
@@ -273,41 +284,31 @@ def main(genomes, config):
 
 
         #Check if Bird has hit the ground
-        for bird in birds:
-            if bird.y + bird.img.get_height() >= 730:
-                for x, bird in enumerate(bird):
+        for x, bird in enumerate(birds):
+            if bird.y + bird.img.get_height() >= 730 or bird.y < 0:
                     birds.pop(x)
                     nets.pop(x)
                     ge.pop(x)
 
         base.move()
-        draw_window(window, bird, pipes, base, score)
-
-    pg.quit()
-    quit()
-
-main()
+        draw_window(window, birds, pipes, base, score)
 
 
-def run():
-    config = neat.config.Config(neat.DefaultGenome, neat.DefaultReproduction,
-                         neat.DefaultSpeciesSet, neat.DefaultStagnation,
-                         config_file)
-    
-    population = neat.population(config)
 
-    #Get stats on each generation
+
+def run(config_path):
+    config = neat.config.Config(neat.DefaultGenome, neat.DefaultReproduction, neat.DefaultSpeciesSet, neat.DefaultStagnation, config_path)
+
+    population = neat.Population(config)
+
     population.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     population.add_reporter(stats)
 
-    winner = population.run(main(), 50)
-
+    winner = population.run(main,50)
 
 
 if __name__ == "__main__":
-
-    #Path for the file
     local_dir = os.path.dirname(__file__)
     config_path = os.path.join(local_dir, "config-feedforward.txt")
     run(config_path)
