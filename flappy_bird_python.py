@@ -230,7 +230,7 @@ def main(genomes, config):
 
 
         pipe_ind = 0
-        if len(birds) > 0 and len(pipes) > 0:
+        if len(birds) > 0:
             if len(pipes) > 1 and birds[0].x > pipes[0].x + pipes[0].PIPE_TOP.get_width():
                 pipe_ind = 1
         else:
@@ -238,29 +238,24 @@ def main(genomes, config):
             break
 
 
-        
-        for x, bird in enumerate(birds):  # Fixed: 'bird' instead of 'birds'
+        for x, bird in enumerate(birds):
             bird.move()
             ge[x].fitness += 0.1
-
             output = nets[x].activate((bird.y, abs(bird.y - pipes[pipe_ind].height), abs(bird.y - pipes[pipe_ind].bottom)))
 
             if output[0] > 0.5:
                 bird.Jump()
 
 
-        
         add_pipe = False
         rem = []
         for pipe in pipes:
-            if bird.y + bird.img.get_height() >= 730 or bird.y < 0:
-                for x, bird in enumerate(birds):
-                        birds.pop(x)
-                        nets.pop(x)
-                        ge.pop(x)
-
-
-
+            for x, bird in enumerate(birds):
+                if pipe.collide(bird):
+                    ge[x].fitness -= 1
+                    birds.pop(x)
+                    nets.pop(x)
+                    ge.pop(x)
                     
 
                 if not pipe.passed and pipe.x < bird.x:
@@ -277,18 +272,18 @@ def main(genomes, config):
             score += 1
             for g in ge:
                 g.fitness += 5
-            pipes.append(Pipe(600))
+                pipes.append(Pipe(750))
         
-        for p in rem:
-            pipes.remove(p)
+        for r in rem:
+            pipes.remove(r)
 
 
         #Check if Bird has hit the ground
         for x, bird in enumerate(birds):
             if bird.y + bird.img.get_height() >= 730 or bird.y < 0:
-                    birds.pop(x)
-                    nets.pop(x)
-                    ge.pop(x)
+                birds.pop(x)
+                nets.pop(x)
+                ge.pop(x)
 
         base.move()
         draw_window(window, birds, pipes, base, score)
@@ -299,13 +294,12 @@ def main(genomes, config):
 def run(config_path):
     config = neat.config.Config(neat.DefaultGenome, neat.DefaultReproduction, neat.DefaultSpeciesSet, neat.DefaultStagnation, config_path)
 
-    population = neat.Population(config)
-
-    population.add_reporter(neat.StdOutReporter(True))
+    p = neat.Population(config)
+    p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
-    population.add_reporter(stats)
+    p.add_reporter(stats)
 
-    winner = population.run(main,50)
+    winner = p.run(main, 50)
 
 
 if __name__ == "__main__":
